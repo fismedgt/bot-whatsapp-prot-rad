@@ -7,9 +7,11 @@ app = FastAPI()
 # =========================
 # CONFIGURACIÓN
 # =========================
-VERIFY_TOKEN = "zona_token"
-WHATSAPP_TOKEN = "EAA742vjZAbLgBRAoXXHegatn3pK7EZCtjRH75Bodp5KNAycgBL4xfSb3lHVo67k5L56AgCh6gNYqJQDdS8tPZAAvn42FJELy9adtn914hs6SwEYjqZCdUE654ZC6NUS2M09vitW2x4Qc1ewJ1Ua9d1oVYbQPfo4io920tqFmcczIZBrPZA5oOYwcgn1IgoYgTXM0gaR7aQ6lzZALwnZC2JAl3TPzokEQgzlAkZAbhoyY6zVyPy4QJAgqatocjOxqDHxZAYgo45wN7F5QYUIeq2pQQO1L74MqQZDZD"  # 🔴 NO pongas el token real aquí en público
-PHONE_NUMBER_ID = "999192559949063"
+import os
+
+WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
+PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
+VERIFY_TOKEN = os.getenv("VERIFY_TOKEN")
 
 # =========================
 # RUTA BASE
