@@ -31,14 +31,13 @@ async def verify_webhook(request: Request):
     verify_token = params.get("hub.verify_token")
     challenge = params.get("hub.challenge")
 
-    print("🔐 Verificación webhook recibida")
+    print("TOKEN RECIBIDO:", verify_token)
+    print("TOKEN SERVIDOR:", VERIFY_TOKEN)
 
     if verify_token == VERIFY_TOKEN:
-        print("✅ Webhook verificado correctamente")
         return int(challenge)
 
-    print("❌ Token incorrecto")
-    return PlainTextResponse("Error de verificación", status_code=403)
+    return "Error de verificación", 403
 
 # =========================
 # RECEPCIÓN DE MENSAJES
