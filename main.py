@@ -35,7 +35,7 @@ async def verify_webhook(request: Request):
 
     if verify_token == VERIFY_TOKEN:
         print("✅ Webhook verificado correctamente")
-        return PlainTextResponse(content=challenge, status_code=200)
+        return int(challenge)
 
     print("❌ Token incorrecto")
     return PlainTextResponse("Error de verificación", status_code=403)
