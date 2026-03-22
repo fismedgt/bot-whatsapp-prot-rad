@@ -1,5 +1,8 @@
 from fastapi import FastAPI, Request
+from fastapi.responses import PlainTextResponse, JSONResponse
 import requests
+import os
+
 from agente import agente_ventas
 
 app = FastAPI()
@@ -7,8 +10,6 @@ app = FastAPI()
 # =========================
 # CONFIGURACIÓN
 # =========================
-import os
-
 WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
 PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN")
@@ -21,82 +22,89 @@ def root():
     return {"status": "ok"}
 
 # =========================
-# VERIFICACIÓN WEBHOOK
+# VERIFICACIÓN WEBHOOK (FIX CLAVE)
 # =========================
 @app.get("/webhook")
 async def verify_webhook(request: Request):
     params = request.query_params
 
-    if params.get("hub.verify_token") == VERIFY_TOKEN:
-        return int(params.get("hub.challenge"))
+    verify_token = params.get("hub.verify_token")
+    challenge = params.get("hub.challenge")
 
-    return "Error de verificación"
+    print("🔐 Verificación webhook recibida")
+
+    if verify_token == VERIFY_TOKEN:
+        print("✅ Webhook verificado correctamente")
+        return PlainTextResponse(content=challenge, status_code=200)
+
+    print("❌ Token incorrecto")
+    return PlainTextResponse("Error de verificación", status_code=403)
 
 # =========================
 # RECEPCIÓN DE MENSAJES
 # =========================
 @app.post("/webhook")
 async def receive_message(request: Request):
-    try:
-        # 🔥 PROTEGER PARSEO JSON
-        try:
-            data = await request.json()
-        except Exception as e:
-            print("🔥 ERROR JSON:", e)
-            return {"status": "error json"}
+    print("🔥 WEBHOOK ACTIVADO")
 
+    try:
+        data = await request.json()
         print("📩 DATA COMPLETA:", data)
 
         entry = data.get("entry", [])
         if not entry:
-            return {"status": "no entry"}
+            return JSONResponse({"status": "no entry"})
 
         changes = entry[0].get("changes", [])
         if not changes:
-            return {"status": "no changes"}
+            return JSONResponse({"status": "no changes"})
 
         value = changes[0].get("value", {})
         messages = value.get("messages")
 
         if not messages:
             print("⚠️ Evento sin mensaje")
-            return {"status": "no message"}
+            return JSONResponse({"status": "no message"})
 
         message = messages[0]
 
         if message.get("type") != "text":
-            print("⚠️ No es texto:", message)
-            return {"status": "ignored"}
+            print("⚠️ Mensaje no es texto:", message)
+            return JSONResponse({"status": "ignored"})
 
         texto = message.get("text", {}).get("body", "")
         telefono = message.get("from", "")
 
         print(f"📲 Mensaje recibido de {telefono}: {texto}")
 
-        # 🔥 PROTEGER AGENTE
+        # =========================
+        # AGENTE IA
+        # =========================
         try:
             respuesta = agente_ventas(texto, telefono)
         except Exception as e:
             print("🔥 ERROR AGENTE:", e)
-            respuesta = "Error procesando mensaje"
+            respuesta = "Hubo un error procesando tu mensaje."
 
-        # 🔥 PROTEGER ENVÍO
+        # =========================
+        # ENVÍO RESPUESTA
+        # =========================
         try:
             enviar_mensaje(telefono, respuesta)
         except Exception as e:
             print("🔥 ERROR ENVÍO:", e)
 
-        return {"status": "ok"}
+        return JSONResponse({"status": "ok"})
 
     except Exception as e:
         print("🔥 ERROR CRÍTICO TOTAL:", e)
-        return {"status": "fatal"}
+        return JSONResponse({"status": "fatal"})
 
 # =========================
 # ENVÍO DE MENSAJES
 # =========================
 def enviar_mensaje(numero, texto):
-    url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
+    url = f"https://graph.facebook.com/v19.0/{PHONE_NUMBER_ID}/messages"
 
     headers = {
         "Authorization": f"Bearer {WHATSAPP_TOKEN}",
@@ -112,4 +120,5 @@ def enviar_mensaje(numero, texto):
 
     response = requests.post(url, headers=headers, json=data)
 
-    print("📤 Respuesta envío:", response.status_code, response.text)
+    print("📤 Respuesta envío:", response.status_code)
+    print("📤 Detalle:", response.text)
