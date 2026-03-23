@@ -24,6 +24,12 @@ def root():
 # =========================
 # VERIFICACIÓN WEBHOOK (FIX CLAVE)
 # =========================
+from fastapi import FastAPI, Request
+
+app = FastAPI()
+
+VERIFY_TOKEN = "mi_token_123"
+
 @app.get("/webhook")
 async def verify_webhook(request: Request):
     params = request.query_params
@@ -31,13 +37,9 @@ async def verify_webhook(request: Request):
     verify_token = params.get("hub.verify_token")
     challenge = params.get("hub.challenge")
 
-    print("TOKEN RECIBIDO:", verify_token)
-    print("TOKEN SERVIDOR:", VERIFY_TOKEN)
-
     if verify_token == VERIFY_TOKEN:
         return int(challenge)
-
-    return "Error de verificación", 403
+    return {"error": "Token inválido"}
 
 # =========================
 # RECEPCIÓN DE MENSAJES
