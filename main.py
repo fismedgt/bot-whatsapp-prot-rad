@@ -2,6 +2,10 @@ from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse, JSONResponse
 import requests
 import os
+import json
+from datetime import datetime
+
+CHAT_FILE = "chat_log.json"
 
 app = FastAPI()
 
@@ -59,6 +63,8 @@ async def receive_message(request: Request):
             texto = message.get("text", {}).get("body", "")
 
             print(f"📲 Mensaje recibido de {numero}: {texto}")
+
+            guardar_mensaje(numero, texto, "recibido")
 
             # 💾 Guardar mensaje
             chat_log.append({
@@ -119,6 +125,34 @@ def send_whatsapp_message(to, message):
 
     print("📤 STATUS:", response.status_code)
     print("📤 RESPUESTA:", response.text)
+
+    if response.status_code == 200:
+        guardar_mensaje(to, message, "enviado")
+    else:
+        print("❌ No se guardó porque falló el envío")
+
+# =========================================
+# 🧪 GUARDAR MENSAJES
+# =========================================
+
+def guardar_mensaje(numero, texto, tipo):
+    mensaje = {
+        "numero": numero,
+        "texto": texto,
+        "tipo": tipo,  # "recibido" o "enviado"
+        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    try:
+        with open(CHAT_FILE, "r") as f:
+            data = json.load(f)
+    except:
+        data = []
+
+    data.append(mensaje)
+
+    with open(CHAT_FILE, "w") as f:
+        json.dump(data, f, indent=2)
 
 # =========================================
 # 🧪 RUTA DE PRUEBA
