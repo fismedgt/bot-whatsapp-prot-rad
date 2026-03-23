@@ -23,6 +23,7 @@ def cargar_datos():
         return pd.DataFrame()
 
 df = cargar_datos()
+st.write("DEBUG DATA:", df)
 
 if df.empty:
     st.warning("No hay mensajes aún")
