@@ -4,8 +4,22 @@ import requests
 import os
 
 from agente import agente_ventas
+from fastapi import FastAPI, Request
 
 app = FastAPI()
+
+VERIFY_TOKEN = "mi_token_123"
+
+@app.get("/webhook")
+async def verify_webhook(request: Request):
+    params = request.query_params
+
+    verify_token = params.get("hub.verify_token")
+    challenge = params.get("hub.challenge")
+
+    if verify_token == VERIFY_TOKEN:
+        return int(challenge)
+    return {"error": "Token inválido"}
 
 # =========================
 # CONFIGURACIÓN
