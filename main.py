@@ -1,32 +1,18 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import PlainTextResponse, JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 import requests
 import os
 
 from agente import agente_ventas
-from fastapi import FastAPI, Request
 
 app = FastAPI()
-
-VERIFY_TOKEN = "mi_token_123"
-
-@app.get("/webhook")
-async def verify_webhook(request: Request):
-    params = request.query_params
-
-    verify_token = params.get("hub.verify_token")
-    challenge = params.get("hub.challenge")
-
-    if verify_token == VERIFY_TOKEN:
-        return int(challenge)
-    return {"error": "Token inválido"}
 
 # =========================
 # CONFIGURACIÓN
 # =========================
+VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "mi_token_123")
 WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
 PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
-VERIFY_TOKEN = os.getenv("VERIFY_TOKEN")
 
 # =========================
 # RUTA BASE
@@ -36,14 +22,8 @@ def root():
     return {"status": "ok"}
 
 # =========================
-# VERIFICACIÓN WEBHOOK (FIX CLAVE)
+# VERIFICACIÓN WEBHOOK
 # =========================
-from fastapi import FastAPI, Request
-
-app = FastAPI()
-
-VERIFY_TOKEN = "mi_token_123"
-
 @app.get("/webhook")
 async def verify_webhook(request: Request):
     params = request.query_params
@@ -52,8 +32,9 @@ async def verify_webhook(request: Request):
     challenge = params.get("hub.challenge")
 
     if verify_token == VERIFY_TOKEN:
-        return int(challenge)
-    return {"error": "Token inválido"}
+        return PlainTextResponse(content=challenge)
+
+    return JSONResponse({"error": "Token inválido"}, status_code=403)
 
 # =========================
 # RECEPCIÓN DE MENSAJES
