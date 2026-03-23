@@ -9,6 +9,18 @@ CHAT_FILE = "chat_log.json"
 
 app = FastAPI()
 
+import json
+
+@app.get("/chats")
+def get_chats():
+    try:
+        with open("chat_log.json", "r") as f:
+            data = json.load(f)
+        return data
+    except:
+        return []
+
+
 # 🔑 CONFIGURACIÓN (MEJOR usar variables de entorno en Render)
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "mi_token_seguro")
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN", "tu_access_token")
