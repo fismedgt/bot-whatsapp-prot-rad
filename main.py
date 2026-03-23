@@ -100,10 +100,18 @@ async def receive_message(request: Request):
 # ENVÍO DE MENSAJES
 # =========================
 def enviar_mensaje(numero, texto):
+    if not WHATSAPP_TOKEN:
+        print("❌ ERROR: WHATSAPP_TOKEN no definido")
+        return
+
+    if not PHONE_NUMBER_ID:
+        print("❌ ERROR: PHONE_NUMBER_ID no definido")
+        return
+
     url = f"https://graph.facebook.com/v19.0/{PHONE_NUMBER_ID}/messages"
 
     headers = {
-        "Authorization": f"Bearer {os.getenv('WHATSAPP_TOKEN_NEW')}",
+        "Authorization": f"Bearer {WHATSAPP_TOKEN}",
         "Content-Type": "application/json"
     }
 
