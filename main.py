@@ -103,7 +103,7 @@ def enviar_mensaje(numero, texto):
     url = f"https://graph.facebook.com/v19.0/{PHONE_NUMBER_ID}/messages"
 
     headers = {
-        "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+        "Authorization": f"Bearer {os.getenv('WHATSAPP_TOKEN_NEW')}",
         "Content-Type": "application/json"
     }
 
