@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import pandas as pd
+import requests
 
 CHAT_FILE = "chat_log.json"
 
@@ -9,12 +10,16 @@ st.set_page_config(page_title="CRM WhatsApp", layout="wide")
 st.title("📲 Panel de Mensajes - WhatsApp Bot")
 
 # 🔄 Cargar datos
+
+API_URL = "https://bot-whatsapp-prot-rad.onrender.com/chats"
+
 def cargar_datos():
     try:
-        with open(CHAT_FILE, "r") as f:
-            data = json.load(f)
+        response = requests.get(API_URL)
+        data = response.json()
         return pd.DataFrame(data)
-    except:
+    except Exception as e:
+        print("Error cargando datos:", e)
         return pd.DataFrame()
 
 df = cargar_datos()
