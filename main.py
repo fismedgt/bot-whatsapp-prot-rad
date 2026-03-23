@@ -84,17 +84,17 @@ async def receive_message(request: Request):
 def generar_respuesta(texto):
     texto = texto.lower()
 
-    if "hola" in texto:
-        return "Hola 👋 Soy tu asistente de protección radiológica. ¿En qué puedo ayudarte?"
-    
-    elif "precio" in texto or "costo" in texto:
-        return "Ofrecemos servicios de protección radiológica personalizados. ¿Qué tipo de equipo tienes?"
-    
+    if "hola" in texto or "buenos" in texto:
+        return "Hola 👋 Bienvenido al asistente de protección radiológica. ¿En qué puedo ayudarte hoy?"
+
+    elif "precio" in texto:
+        return "Ofrecemos servicios de asesoría en protección radiológica. ¿Qué tipo de equipo utilizas?"
+
     elif "rayos x" in texto:
-        return "Podemos ayudarte con cumplimiento normativo, blindaje y dosimetría en rayos X."
+        return "Podemos apoyarte con cumplimiento normativo, blindaje y control de calidad en rayos X."
 
     else:
-        return "Recibí tu mensaje 👍 En breve te doy más información."
+        return "Gracias por tu mensaje. En breve uno de nuestros especialistas te atenderá."
 
 # =========================================
 # 📤 ENVÍO DE MENSAJES A WHATSAPP
