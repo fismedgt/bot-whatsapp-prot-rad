@@ -1,29 +1,21 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import PlainTextResponse, JSONResponse
 import requests
 import os
 
-from agente import agente_ventas
-
 app = FastAPI()
 
-# =========================
-# CONFIGURACIÓN
-# =========================
-VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "mi_token_123")
-WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
-PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
+# 🔑 CONFIGURACIÓN (MEJOR usar variables de entorno en Render)
+VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "mi_token_seguro")
+ACCESS_TOKEN = os.getenv("ACCESS_TOKEN", "tu_access_token")
+PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID", "tu_phone_number_id")
 
-# =========================
-# RUTA BASE
-# =========================
-@app.get("/")
-def root():
-    return {"status": "ok"}
+# 🧠 Memoria simple (luego puedes cambiar a base de datos)
+chat_log = []
 
-# =========================
-# VERIFICACIÓN WEBHOOK
-# =========================
+# =========================================
+# 🔐 VERIFICACIÓN DEL WEBHOOK (GET)
+# =========================================
 @app.get("/webhook")
 async def verify_webhook(request: Request):
     params = request.query_params
@@ -31,98 +23,106 @@ async def verify_webhook(request: Request):
     verify_token = params.get("hub.verify_token")
     challenge = params.get("hub.challenge")
 
-    if verify_token == VERIFY_TOKEN:
-        return PlainTextResponse(content=challenge)
+    print("🔍 VERIFY_TOKEN RECIBIDO:", verify_token)
+    print("🔍 VERIFY_TOKEN SERVIDOR:", VERIFY_TOKEN)
+    print("🔍 CHALLENGE:", challenge)
+
+    if verify_token == VERIFY_TOKEN and challenge:
+        return PlainTextResponse(content=str(challenge), status_code=200)
 
     return JSONResponse({"error": "Token inválido"}, status_code=403)
 
-# =========================
-# RECEPCIÓN DE MENSAJES
-# =========================
+# =========================================
+# 📩 RECEPCIÓN DE MENSAJES (POST)
+# =========================================
 @app.post("/webhook")
 async def receive_message(request: Request):
-    print("🔥 WEBHOOK ACTIVADO")
+    data = await request.json()
 
     try:
-        data = await request.json()
-        print("📩 DATA COMPLETA:", data)
-
         entry = data.get("entry", [])
         if not entry:
-            return JSONResponse({"status": "no entry"})
+            return {"status": "no entry"}
 
         changes = entry[0].get("changes", [])
         if not changes:
-            return JSONResponse({"status": "no changes"})
+            return {"status": "no changes"}
 
         value = changes[0].get("value", {})
         messages = value.get("messages")
 
-        if not messages:
-            print("⚠️ Evento sin mensaje")
-            return JSONResponse({"status": "no message"})
+        if messages:
+            message = messages[0]
+            numero = message["from"]
 
-        message = messages[0]
+            # 📩 Texto del mensaje
+            texto = message.get("text", {}).get("body", "")
 
-        if message.get("type") != "text":
-            print("⚠️ Mensaje no es texto:", message)
-            return JSONResponse({"status": "ignored"})
+            print(f"📲 Mensaje recibido de {numero}: {texto}")
 
-        texto = message.get("text", {}).get("body", "")
-        telefono = message.get("from", "")
+            # 💾 Guardar mensaje
+            chat_log.append({
+                "numero": numero,
+                "mensaje": texto
+            })
 
-        print(f"📲 Mensaje recibido de {telefono}: {texto}")
+            # 🤖 Lógica de respuesta básica
+            respuesta = generar_respuesta(texto)
 
-        # =========================
-        # AGENTE IA
-        # =========================
-        try:
-            respuesta = agente_ventas(texto, telefono)
-        except Exception as e:
-            print("🔥 ERROR AGENTE:", e)
-            respuesta = "Hubo un error procesando tu mensaje."
+            # 📤 Enviar respuesta
+            send_whatsapp_message(numero, respuesta)
 
-        # =========================
-        # ENVÍO RESPUESTA
-        # =========================
-        try:
-            enviar_mensaje(telefono, respuesta)
-        except Exception as e:
-            print("🔥 ERROR ENVÍO:", e)
-
-        return JSONResponse({"status": "ok"})
+        return {"status": "ok"}
 
     except Exception as e:
-        print("🔥 ERROR CRÍTICO TOTAL:", e)
-        return JSONResponse({"status": "fatal"})
+        print("❌ ERROR PROCESANDO MENSAJE:", str(e))
+        return {"status": "error"}
 
-# =========================
-# ENVÍO DE MENSAJES
-# =========================
-def enviar_mensaje(numero, texto):
-    if not WHATSAPP_TOKEN:
-        print("❌ ERROR: WHATSAPP_TOKEN no definido")
-        return
+# =========================================
+# 🤖 LÓGICA DE RESPUESTA
+# =========================================
+def generar_respuesta(texto):
+    texto = texto.lower()
 
-    if not PHONE_NUMBER_ID:
-        print("❌ ERROR: PHONE_NUMBER_ID no definido")
-        return
+    if "hola" in texto:
+        return "Hola 👋 Soy tu asistente de protección radiológica. ¿En qué puedo ayudarte?"
+    
+    elif "precio" in texto or "costo" in texto:
+        return "Ofrecemos servicios de protección radiológica personalizados. ¿Qué tipo de equipo tienes?"
+    
+    elif "rayos x" in texto:
+        return "Podemos ayudarte con cumplimiento normativo, blindaje y dosimetría en rayos X."
 
-    url = f"https://graph.facebook.com/v19.0/{PHONE_NUMBER_ID}/messages"
+    else:
+        return "Recibí tu mensaje 👍 En breve te doy más información."
+
+# =========================================
+# 📤 ENVÍO DE MENSAJES A WHATSAPP
+# =========================================
+def send_whatsapp_message(to, message):
+    url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
 
     headers = {
-        "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+        "Authorization": f"Bearer {ACCESS_TOKEN}",
         "Content-Type": "application/json"
     }
 
     data = {
         "messaging_product": "whatsapp",
-        "to": numero,
-        "type": "text",
-        "text": {"body": texto}
+        "to": to,
+        "text": {
+            "body": message
+        }
     }
 
     response = requests.post(url, headers=headers, json=data)
 
-    print("📤 Respuesta envío:", response.status_code)
-    print("📤 Detalle:", response.text)
+    print("📤 STATUS:", response.status_code)
+    print("📤 RESPUESTA:", response.text)
+
+# =========================================
+# 🧪 RUTA DE PRUEBA
+# =========================================
+@app.get("/")
+async def root():
+    return {"mensaje": "Servidor WhatsApp activo 🚀"}
